@@ -1,0 +1,10 @@
+import * as THREE from 'three';
+globalThis.document = { createElement(){ return { width:0,height:0,getContext(){ return new Proxy({}, { get: () => () => {} }); } }; } };
+const { buildWorld, nearestNode, findPath } = await import('/root/work/fps/game/js/world.js');
+const scene = new THREE.Scene();
+const w = buildWorld(scene);
+const start = nearestNode(w.nav, 22, -26);
+const goal = nearestNode(w.nav, 2, 5);
+console.log('start node', [w.nav.nodes[start].x, w.nav.nodes[start].z], 'goal node', [w.nav.nodes[goal].x, w.nav.nodes[goal].z]);
+const path = findPath(w.nav, start, goal);
+console.log('path len', path.length, path.map(n => `${n.x},${n.z}`).join(' -> '));

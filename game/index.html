@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>STACKPOINT — tactical FPS</title>
+<style>
+  :root { --amber:#f0b90b; --ink:#0b0d10; --panel:rgba(9,11,14,.82); }
+  * { box-sizing:border-box; }
+  html,body { margin:0; height:100%; background:var(--ink); color:#e8eaed; font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; overflow:hidden; }
+  #app { position:fixed; inset:0; }
+  canvas { display:block; width:100%; height:100%; }
+  .hud { position:fixed; inset:0; pointer-events:none; }
+  #crosshair { position:absolute; left:50%; top:50%; width:18px; height:18px; transform:translate(-50%,-50%); }
+  #crosshair i { position:absolute; background:#e8eaed; opacity:.85; }
+  #crosshair i:nth-child(1){ left:8px; top:0; width:2px; height:5px; }
+  #crosshair i:nth-child(2){ left:8px; bottom:0; width:2px; height:5px; }
+  #crosshair i:nth-child(3){ top:8px; left:0; height:2px; width:5px; }
+  #crosshair i:nth-child(4){ top:8px; right:0; height:2px; width:5px; }
+  #vitals { position:absolute; left:24px; bottom:22px; display:flex; gap:18px; align-items:flex-end; }
+  .stat { background:var(--panel); border:1px solid #23282f; padding:8px 12px; border-radius:6px; min-width:78px; }
+  .stat b { display:block; font-size:22px; line-height:1.1; }
+  .stat span { font-size:10px; letter-spacing:.14em; color:#8b949e; text-transform:uppercase; }
+  #ammo { position:absolute; right:24px; bottom:22px; text-align:right; background:var(--panel); border:1px solid #23282f; padding:8px 14px; border-radius:6px; }
+  #ammo b { font-size:26px; }
+  #ammo span { color:#8b949e; font-size:11px; letter-spacing:.12em; }
+  #topbar { position:absolute; top:14px; left:50%; transform:translateX(-50%); display:flex; gap:10px; align-items:center; background:var(--panel); border:1px solid #23282f; padding:6px 14px; border-radius:999px; font-size:13px; }
+  #topbar .t { color:var(--amber); font-weight:700; }
+  #objective { position:absolute; top:52px; left:50%; transform:translateX(-50%); font-size:12px; letter-spacing:.16em; color:#8b949e; background:rgba(9,11,14,.55); padding:4px 12px; border-radius:4px; }
+  #banner { position:absolute; left:50%; top:22%; transform:translateX(-50%); text-align:center; font-size:30px; letter-spacing:.06em; text-shadow:0 2px 18px rgba(0,0,0,.8); opacity:0; transition:opacity .18s; }
+  #banner small { display:block; font-size:13px; color:#9aa4af; letter-spacing:.2em; margin-top:6px; }
+  #feed { position:absolute; right:22px; top:64px; font-size:12px; line-height:1.7; text-align:right; color:#c9d1d9; }
+  #feed div { background:rgba(9,11,14,.6); padding:2px 8px; border-radius:4px; margin-bottom:4px; display:inline-block; }
+  #buy { position:absolute; inset:0; display:none; place-items:center; background:rgba(3,5,8,.72); pointer-events:auto; }
+  #buy.on { display:grid; }
+  #buy .panel { width:min(760px,92vw); background:#0d1116; border:1px solid #262d36; border-radius:10px; padding:20px 22px; }
+  #buy h2 { margin:0 0 4px; font-size:16px; letter-spacing:.18em; color:var(--amber); }
+  #buy p { margin:0 0 16px; color:#8b949e; font-size:12px; }
+  #buy .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:10px; }
+  .item { border:1px solid #262d36; border-radius:8px; padding:12px; cursor:pointer; background:#10151b; transition:border-color .12s, transform .12s; }
+  .item:hover { border-color:var(--amber); transform:translateY(-1px); }
+  .item b { display:block; font-size:14px; margin-bottom:6px; }
+  .item .meta { font-size:11px; color:#8b949e; display:flex; justify-content:space-between; }
+  .item.poor { opacity:.45; cursor:not-allowed; }
+  #start { position:absolute; inset:0; display:grid; place-items:center; background:radial-gradient(circle at 50% 35%, #16202b, #06080a 70%); pointer-events:auto; text-align:center; }
+  #start h1 { font-size:44px; letter-spacing:.28em; margin:0 0 6px; color:#fff; }
+  #start h1 em { color:var(--amber); font-style:normal; }
+  #start p { color:#8b949e; font-size:13px; line-height:1.9; margin:0 0 26px; }
+  #start button { pointer-events:auto; font:inherit; font-size:14px; letter-spacing:.18em; padding:14px 30px; border-radius:999px; border:1px solid var(--amber); background:transparent; color:var(--amber); cursor:pointer; }
+  #start button:hover { background:var(--amber); color:#0b0d10; }
+  #start .keys { margin-top:26px; color:#5c6672; font-size:11px; letter-spacing:.1em; }
+  #hurt { position:absolute; inset:0; box-shadow:inset 0 0 120px rgba(190,30,30,0); transition:box-shadow .2s; }
+  #dead { position:absolute; inset:0; display:none; place-items:center; background:rgba(20,4,4,.55); }
+  #dead.on { display:grid; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div class="hud">
+  <div id="crosshair"><i></i><i></i><i></i><i></i></div>
+  <div id="hurt"></div>
+  <div id="topbar"><span>ROUND <b class="t" id="round">1</b></span><span id="timer">0:20</span><span id="score">0 — 0</span></div>
+  <div id="objective"></div>
+  <div id="banner"></div>
+  <div id="feed"></div>
+  <div id="vitals">
+    <div class="stat"><b id="hp">100</b><span>health</span></div>
+    <div class="stat"><b id="ap">0</b><span>armor</span></div>
+    <div class="stat"><b id="cash">$800</b><span>money</span></div>
+  </div>
+  <div id="ammo"><b id="mag">12</b><span id="reserve">/ 36</span><div id="nades" style="font-size:11px;color:#8b949e;letter-spacing:.12em;margin-top:4px">nade x1</div></div>
+  <div id="buy"><div class="panel">
+    <h2>BUY PHASE</h2>
+    <p>Click an item, or press 1-6. Spend your money before the round starts.</p>
+    <div class="grid" id="buygrid"></div>
+  </div></div>
+  <div id="dead"><div style="text-align:center"><div style="font-size:28px;letter-spacing:.2em">ELIMINATED</div><div style="margin-top:10px;color:#9aa4af;font-size:13px" id="deadnote"></div></div></div>
+  <div id="start">
+    <div>
+      <h1>STACK<em>POINT</em></h1>
+      <p>Round-based tactical shooter. Two teams, short rounds, one buy phase.<br/>Eliminate the enemy team or run them off the objective.</p>
+      <button id="play">ENTER MATCH</button>
+      <div class="keys">WASD MOVE · SHIFT WALK · SPACE JUMP · MOUSE AIM · LMB FIRE · R RELOAD · B BUY · ESC RELEASE CURSOR</div>
+    </div>
+  </div>
+</div>
+<script type="importmap">
+{ "imports": { "three": "./vendor/three.module.min.js" } }
+</script>
+<script type="module" src="./js/main.js"></script>
+</body>
+</html>

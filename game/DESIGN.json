@@ -1,0 +1,35 @@
+{
+  "game": "STACKPOINT",
+  "genre": "round-based tactical first-person shooter, single player against bots",
+  "objective": "Attackers plant a charge at site A and hold it for 40 seconds; defenders defuse it in 8 seconds. A round also ends when one team is eliminated, or when the clock expires before the charge is planted (defenders win).",
+  "controls": {
+    "move": "WASD",
+    "walk": "Shift",
+    "crouch": "Ctrl or C",
+    "jump": "Space (gravity 18 m/s^2, 5.4 m/s jump)",
+    "fire": "left mouse",
+    "reload": "R",
+    "grenade": "G",
+    "plant_or_defuse": "hold E on the site",
+    "buy_menu": "B during the buy phase",
+    "release_cursor": "Escape"
+  },
+  "systems": {
+    "simulation": "Fixed 120 Hz step with an accumulator; rendering is separate and interpolates nothing, so a slow frame never changes the outcome of a fight.",
+    "weapons": "P9 sidearm, VX-9 SMG, AR-4 rifle. Each has its own damage, rate of fire, magazine, spread and recoil. Headshots deal 3x. Spread grows with recoil and while moving, and shrinks while crouched, so stopping to aim pays.",
+    "economy": "Start at $800. A win pays $3250, a loss $1400, a kill $300. Weapons, kevlar, a grenade and ammo are bought in the 20 second buy phase.",
+    "bots": "Waypoint graph with visibility edges and A* pathing. Perception is throttled to about 90 ms per scan; a bot picks the closest visible enemy, reaction time and aim error scale with skill, it closes distance when too far to trade, strafes at close range, backs off when too close and re-paths when stuck. Gunshots and explosions emit noise events that pull idle bots to investigate. Each bot takes its own hold point, so a squad spreads over the site instead of stacking.",
+    "objective": "The charge is planted with a 3.2 second hold on the site, ticks for 40 seconds, and can only be defused while no attacker is alive within 10 metres; contesting the site resets the defuse.",
+    "grenades": "One HE grenade per round, thrown with an arc and bounce, 2.6 second fuse, 8.5 metre radius with falloff and line-of-sight-free radial damage.",
+    "hud": "Health, armour, money, magazine and reserve, round timer, score, objective status, kill feed and grenade count.",
+    "audio": "All sound is synthesized at runtime with WebAudio (shot, hit marker, explosion, plant tone); the game loads no audio files and makes no network request."
+  },
+  "files": {
+    "js/main.js": "state machine: rounds, economy, buy menu, shooting, bomb, grenades, HUD, fixed-step loop",
+    "js/world.js": "map geometry, colliders, raycasts, navigation graph, site decal and lights",
+    "js/bots.js": "bot perception, pathing, movement, burst fire",
+    "js/combat.js": "weapon table, character models, hitscan against capsule and head sphere",
+    "js/viewmodel.js": "first-person weapon model with recoil, reload and muzzle flash",
+    "vendor/": "three.js 0.187.0, unmodified"
+  }
+}
